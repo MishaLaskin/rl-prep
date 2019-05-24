@@ -1,0 +1,25 @@
+{
+    "env_names": [
+        "Ant-v2",
+        "HalfCheetah-v2",
+        "Hopper-v2",
+        "Humanoid-v2",
+        "Reacher-v2",
+        "Walker2d-v2"
+    ],
+    "expert_rollouts": 20,
+    "eval_rollouts": 10,
+    "render": 0,
+    "h_dim": 128,
+    "learning_rate": 0.0005,
+    "epochs": 2,
+    "seed": 1,
+    "algorithm": "DAgger",
+    "device": "cpu",
+    "expert_path": "./experts",
+    "model_path": "./clones",
+    "L2": 0.00001,
+    "batch_size": 256,
+    "dagger_iters": 9,
+    "dagger_rollouts": 20
+}
