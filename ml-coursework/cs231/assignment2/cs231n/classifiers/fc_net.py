@@ -6,6 +6,10 @@ from cs231n.layers import *
 from cs231n.layer_utils import *
 
 
+def normalize(x):
+    return (x-np.mean(x))/(np.std(x)+1e-6)
+
+
 class TwoLayerNet(object):
     """
     A two-layer fully-connected neural network with ReLU nonlinearity and
@@ -48,14 +52,20 @@ class TwoLayerNet(object):
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        D = input_dim
+        H = hidden_dim
+        out_dim = num_classes
+        self.params["W1"] = normalize(
+            np.random.randn(D * H).reshape(D, H))*weight_scale
+        self.params["W2"] = normalize(np.random.randn(
+            H * out_dim).reshape(H, out_dim))*weight_scale
+        self.params["b1"] = np.zeros(H)
+        self.params["b2"] = np.zeros(out_dim)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
-
 
     def loss(self, X, y=None):
         """
@@ -83,7 +93,9 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        h1, _ = affine_forward(X, self.params["W1"], self.params["b1"])
+        a1, _ = relu_forward(h1)
+        scores, _ = affine_forward(a1, self.params["W2"], self.params["b2"])
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -107,7 +119,14 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dx = softmax_loss(scores, y)
+        dh2, dw2, db2 = affine_backward(
+            dx, [scores, self.params["W2"], self.params["b2"]])
+        da1 = relu_backward(dh2)
+        dh1, dw1, db1 = affine_backward(
+            dx, [da1, self.params["W1"], self.params["b1"]])
+        print(loss, dx.shape)
+        assert False
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -200,15 +219,15 @@ class FullyConnectedNet(object):
         # of the first batch normalization layer, self.bn_params[1] to the forward
         # pass of the second batch normalization layer, etc.
         self.bn_params = []
-        if self.normalization=='batchnorm':
-            self.bn_params = [{'mode': 'train'} for i in range(self.num_layers - 1)]
-        if self.normalization=='layernorm':
+        if self.normalization == 'batchnorm':
+            self.bn_params = [{'mode': 'train'}
+                              for i in range(self.num_layers - 1)]
+        if self.normalization == 'layernorm':
             self.bn_params = [{} for i in range(self.num_layers - 1)]
 
         # Cast all parameters to the correct datatype
         for k, v in self.params.items():
             self.params[k] = v.astype(dtype)
-
 
     def loss(self, X, y=None):
         """
@@ -223,7 +242,7 @@ class FullyConnectedNet(object):
         # behave differently during training and testing.
         if self.use_dropout:
             self.dropout_param['mode'] = mode
-        if self.normalization=='batchnorm':
+        if self.normalization == 'batchnorm':
             for bn_param in self.bn_params:
                 bn_param['mode'] = mode
         scores = None

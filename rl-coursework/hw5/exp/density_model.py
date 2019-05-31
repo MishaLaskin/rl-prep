@@ -3,6 +3,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from ex_utils import build_mlp
 
+
 class Density_Model(object):
     def __init__(self):
         super(Density_Model, self).__init__()
@@ -12,6 +13,7 @@ class Density_Model(object):
 
     def get_prob(self, state):
         raise NotImplementedError
+
 
 class Histogram(Density_Model):
     def __init__(self, nbins, preprocessor):
@@ -36,8 +38,9 @@ class Histogram(Density_Model):
                 1. increment the entry "bin_name" in self.hist by "increment"
                 2. increment self.total by "increment" 
         """
+        self.total += increment
         bin_name = self.preprocessor(state)
-        raise NotImplementedError
+        self.hist[bin_name] += increment
 
     def get_count(self, states):
         """
@@ -65,7 +68,7 @@ class Histogram(Density_Model):
 
             args:
                 states: numpy array (bsize, ob_dim)
-    
+
             returns:
                 return the probabilities of the state (bsize)
 
@@ -75,11 +78,13 @@ class Histogram(Density_Model):
         raise NotImplementedError
         return probs
 
+
 class RBF(Density_Model):
     """
         https://en.wikipedia.org/wiki/Radial_basis_function_kernel
         https://en.wikipedia.org/wiki/Kernel_density_estimation
     """
+
     def __init__(self, sigma):
         super(RBF, self).__init__()
         self.sigma = sigma
@@ -131,7 +136,7 @@ class RBF(Density_Model):
         """
         b, ob_dim = states.shape
         if self.means is None:
-            # Return a uniform distribution if we don't have samples in the 
+            # Return a uniform distribution if we don't have samples in the
             # replay buffer yet.
             return (1.0/len(states))*np.ones(len(states))
         else:
@@ -155,6 +160,7 @@ class RBF(Density_Model):
             assert densities.shape == (b,)
 
             return densities
+
 
 class Exemplar(Density_Model):
     def __init__(self, ob_dim, hid_dim, learning_rate, kl_weight):
@@ -190,22 +196,27 @@ class Exemplar(Density_Model):
                 https://www.tensorflow.org/probability/api_docs/python/tfp/distributions
         """
         self.state1, self.state2 = self.define_placeholders()
-        self.encoder1, self.encoder2, self.prior, self.discriminator = self.forward_pass(self.state1, self.state2)
-        self.discrim_target = tf.placeholder(shape=[None, 1], name="discrim_target", dtype=tf.float32)
+        self.encoder1, self.encoder2, self.prior, self.discriminator = self.forward_pass(
+            self.state1, self.state2)
+        self.discrim_target = tf.placeholder(
+            shape=[None, 1], name="discrim_target", dtype=tf.float32)
 
         raise NotImplementedError
         self.log_likelihood = None
         self.likelihood = None
         self.kl = None
-        assert len(self.log_likelihood.shape) == len(self.likelihood.shape) == len(self.kl.shape) == 1
+        assert len(self.log_likelihood.shape) == len(
+            self.likelihood.shape) == len(self.kl.shape) == 1
 
         raise NotImplementedError
         self.elbo = None
         self.update_op = None
 
     def define_placeholders(self):
-        state1 = tf.placeholder(shape=[None, self.ob_dim], name="s1", dtype=tf.float32)
-        state2 = tf.placeholder(shape=[None, self.ob_dim], name="s2", dtype=tf.float32)
+        state1 = tf.placeholder(
+            shape=[None, self.ob_dim], name="s1", dtype=tf.float32)
+        state2 = tf.placeholder(
+            shape=[None, self.ob_dim], name="s2", dtype=tf.float32)
         return state1, state2
 
     def make_encoder(self, state, z_size, scope, n_layers, hid_size):
@@ -279,7 +290,7 @@ class Exemplar(Density_Model):
             args:
                 state1: tf variable
                 state2: tf variable
-            
+
             encoder1: tfp.distributions.MultivariateNormalDiag distribution
             encoder2: tfp.distributions.MultivariateNormalDiag distribution
             prior: tfp.distributions.MultivariateNormalDiag distribution
@@ -296,11 +307,14 @@ class Exemplar(Density_Model):
         # Reuse
         make_encoder1 = tf.make_template('encoder1', self.make_encoder)
         make_encoder2 = tf.make_template('encoder2', self.make_encoder)
-        make_discriminator = tf.make_template('decoder', self.make_discriminator)
+        make_discriminator = tf.make_template(
+            'decoder', self.make_discriminator)
 
         # Encoder
-        encoder1 = make_encoder1(state1, self.hid_dim/2, 'z1', n_layers=2, hid_size=self.hid_dim)
-        encoder2 = make_encoder2(state2, self.hid_dim/2, 'z2', n_layers=2, hid_size=self.hid_dim)
+        encoder1 = make_encoder1(
+            state1, self.hid_dim/2, 'z1', n_layers=2, hid_size=self.hid_dim)
+        encoder2 = make_encoder2(
+            state2, self.hid_dim/2, 'z2', n_layers=2, hid_size=self.hid_dim)
 
         # Prior
         prior = self.make_prior(self.hid_dim/2)
@@ -311,7 +325,8 @@ class Exemplar(Density_Model):
         z = raise NotImplementedError
 
         # Discriminator
-        discriminator = make_discriminator(z, 1, 'discriminator', n_layers=2, hid_size=self.hid_dim)
+        discriminator = make_discriminator(
+            z, 1, 'discriminator', n_layers=2, hid_size=self.hid_dim)
         return encoder1, encoder2, prior, discriminator
 
     def update(self, state1, state2, target):
@@ -361,7 +376,7 @@ class Exemplar(Density_Model):
         """
             ### PROBLEM 3
             ### YOUR CODE HERE
-        
+
             args:
                 state: np array (batch_size, ob_dim)
 

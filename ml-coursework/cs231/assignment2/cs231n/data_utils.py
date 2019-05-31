@@ -7,13 +7,15 @@ import os
 from imageio import imread
 import platform
 
+
 def load_pickle(f):
     version = platform.python_version_tuple()
     if version[0] == '2':
-        return  pickle.load(f)
+        return pickle.load(f)
     elif version[0] == '3':
-        return  pickle.load(f, encoding='latin1')
+        return pickle.load(f, encoding='latin1')
     raise ValueError("invalid python version: {}".format(version))
+
 
 def load_CIFAR_batch(filename):
     """ load single batch of cifar """
@@ -21,15 +23,16 @@ def load_CIFAR_batch(filename):
         datadict = load_pickle(f)
         X = datadict['data']
         Y = datadict['labels']
-        X = X.reshape(10000, 3, 32, 32).transpose(0,2,3,1).astype("float")
+        X = X.reshape(10000, 3, 32, 32).transpose(0, 2, 3, 1).astype("float")
         Y = np.array(Y)
         return X, Y
+
 
 def load_CIFAR10(ROOT):
     """ load all of cifar """
     xs = []
     ys = []
-    for b in range(1,6):
+    for b in range(1, 6):
         f = os.path.join(ROOT, 'data_batch_%d' % (b, ))
         X, Y = load_CIFAR_batch(f)
         xs.append(X)
@@ -41,7 +44,7 @@ def load_CIFAR10(ROOT):
     return Xtr, Ytr, Xte, Yte
 
 
-def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000,
+def get_CIFAR10_data(path=None, num_training=49000, num_validation=1000, num_test=1000,
                      subtract_mean=True):
     """
     Load the CIFAR-10 dataset from disk and perform preprocessing to prepare
@@ -49,7 +52,10 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000,
     condensed to a single function.
     """
     # Load the raw CIFAR-10 data
-    cifar10_dir = 'cs231n/datasets/cifar-10-batches-py'
+    if path == None:
+        cifar10_dir = 'cs231n/datasets/cifar-10-batches-py'
+    else:
+        cifar10_dir = path + 'cifar-10-batches-py'
     X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
 
     # Subsample the data
@@ -77,9 +83,9 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000,
 
     # Package data into a dictionary
     return {
-      'X_train': X_train, 'y_train': y_train,
-      'X_val': X_val, 'y_val': y_val,
-      'X_test': X_test, 'y_test': y_test,
+        'X_train': X_train, 'y_train': y_train,
+        'X_val': X_val, 'y_val': y_val,
+        'X_test': X_test, 'y_test': y_test,
     }
 
 
@@ -135,12 +141,12 @@ def load_tiny_imagenet(path, dtype=np.float32, subtract_mean=True):
 
         X_train_block = np.zeros((num_images, 3, 64, 64), dtype=dtype)
         y_train_block = wnid_to_label[wnid] * \
-                        np.ones(num_images, dtype=np.int64)
+            np.ones(num_images, dtype=np.int64)
         for j, img_file in enumerate(filenames):
             img_file = os.path.join(path, 'train', wnid, 'images', img_file)
             img = imread(img_file)
             if img.ndim == 2:
-        ## grayscale file
+                # grayscale file
                 img.shape = (64, 64, 1)
             X_train_block[j] = img.transpose(2, 0, 1)
         X_train.append(X_train_block)
@@ -199,15 +205,15 @@ def load_tiny_imagenet(path, dtype=np.float32, subtract_mean=True):
         X_test -= mean_image[None]
 
     return {
-      'class_names': class_names,
-      'X_train': X_train,
-      'y_train': y_train,
-      'X_val': X_val,
-      'y_val': y_val,
-      'X_test': X_test,
-      'y_test': y_test,
-      'class_names': class_names,
-      'mean_image': mean_image,
+        'class_names': class_names,
+        'X_train': X_train,
+        'y_train': y_train,
+        'X_val': X_val,
+        'y_val': y_val,
+        'X_test': X_test,
+        'y_test': y_test,
+        'class_names': class_names,
+        'mean_image': mean_image,
     }
 
 
@@ -247,11 +253,11 @@ def load_imagenet_val(num=None):
     """
     imagenet_fn = 'cs231n/datasets/imagenet_val_25.npz'
     if not os.path.isfile(imagenet_fn):
-      print('file %s not found' % imagenet_fn)
-      print('Run the following:')
-      print('cd cs231n/datasets')
-      print('bash get_imagenet_val.sh')
-      assert False, 'Need to download imagenet_val_25.npz'
+        print('file %s not found' % imagenet_fn)
+        print('Run the following:')
+        print('cd cs231n/datasets')
+        print('bash get_imagenet_val.sh')
+        assert False, 'Need to download imagenet_val_25.npz'
     f = np.load(imagenet_fn)
     X = f['X']
     y = f['y']

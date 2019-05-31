@@ -5,6 +5,7 @@ import tensorflow as tf
 from density_model import Density_Model
 from replay import Replay_Buffer
 
+
 class Exploration(object):
     def __init__(self, density_model, bonus_coeff):
         super(Exploration, self).__init__()
@@ -40,10 +41,11 @@ class Exploration(object):
                 bonus and then modify the rewards with the bonus
                 and store that in new_rewards, which you will return
         """
-        raise NotImplementedError
-        bonus = None
-        new_rewards = None
+
+        bonus = self.compute_reward_bonus(states)
+        new_rewards = rewards + self.bonus_coeff * bonus
         return new_rewards
+
 
 class DiscreteExploration(Exploration):
     def __init__(self, density_model, bonus_coeff):
@@ -105,7 +107,7 @@ class ContinuousExploration(Exploration):
         """
             ### PROBLEM 2
             ### YOUR CODE HERE
-        
+
             args:
                 states: (bsize, ob_dim)
         """
@@ -117,7 +119,8 @@ class ContinuousExploration(Exploration):
 
 class RBFExploration(ContinuousExploration):
     def __init__(self, density_model, bonus_coeff, replay_size):
-        super(RBFExploration, self).__init__(density_model, bonus_coeff, replay_size)
+        super(RBFExploration, self).__init__(
+            density_model, bonus_coeff, replay_size)
 
     def fit_density_model(self, states):
         """
@@ -130,9 +133,10 @@ class RBFExploration(ContinuousExploration):
 
 class ExemplarExploration(ContinuousExploration):
     def __init__(self, density_model, bonus_coeff, train_iters, bsize, replay_size):
-        super(ExemplarExploration, self).__init__(density_model, bonus_coeff, replay_size)
+        super(ExemplarExploration, self).__init__(
+            density_model, bonus_coeff, replay_size)
         self.train_iters = train_iters
-        self.bsize = bsize   
+        self.bsize = bsize
 
     def sample_idxs(self, states, batch_size):
         states = copy.deepcopy(states)
@@ -143,17 +147,22 @@ class ExemplarExploration(ContinuousExploration):
             neg_idxs = np.random.randint(data_size, size=batch_size)
             if np.all(pos_idxs != neg_idxs):
                 continue_sampling = False
-        positives = np.concatenate([states[pos_idxs], states[pos_idxs]], axis=0)
-        negatives = np.concatenate([states[pos_idxs], states[neg_idxs]], axis=0)
+        positives = np.concatenate(
+            [states[pos_idxs], states[pos_idxs]], axis=0)
+        negatives = np.concatenate(
+            [states[pos_idxs], states[neg_idxs]], axis=0)
         return positives, negatives
 
     def sample_idxs_replay(self, states, batch_size):
         states = copy.deepcopy(states)
         data_size = len(states)
         pos_idxs = np.random.randint(data_size, size=batch_size)
-        neg_idxs = np.random.randint(data_size, len(self.replay_buffer), size=batch_size)
-        positives = np.concatenate([states[pos_idxs], states[pos_idxs]], axis=0)
-        negatives = np.concatenate([states[pos_idxs], self.replay_buffer[neg_idxs]], axis=0)
+        neg_idxs = np.random.randint(data_size, len(
+            self.replay_buffer), size=batch_size)
+        positives = np.concatenate(
+            [states[pos_idxs], states[pos_idxs]], axis=0)
+        negatives = np.concatenate(
+            [states[pos_idxs], self.replay_buffer[neg_idxs]], axis=0)
         return positives, negatives
 
     def fit_density_model(self, states):
@@ -164,11 +173,15 @@ class ExemplarExploration(ContinuousExploration):
         self.replay_buffer.prepend(states)
         for i in range(self.train_iters):
             if len(self.replay_buffer) >= 2*len(states):
-                positives, negatives = self.sample_idxs_replay(states, self.bsize)
+                positives, negatives = self.sample_idxs_replay(
+                    states, self.bsize)
             else:
                 positives, negatives = self.sample_idxs(states, self.bsize)
-            labels = np.concatenate([np.ones((self.bsize, 1)), np.zeros((self.bsize, 1))], axis=0)
-            ll, kl, elbo = self.density_model.update(positives, negatives, labels)
+            labels = np.concatenate(
+                [np.ones((self.bsize, 1)), np.zeros((self.bsize, 1))], axis=0)
+            ll, kl, elbo = self.density_model.update(
+                positives, negatives, labels)
             if i % (self.train_iters/10) == 0:
-                print('log likelihood\t{}\tkl divergence\t{}\t-elbo\t{}'.format(np.mean(ll), np.mean(kl), -elbo))
+                print(
+                    'log likelihood\t{}\tkl divergence\t{}\t-elbo\t{}'.format(np.mean(ll), np.mean(kl), -elbo))
         return ll, kl, elbo
